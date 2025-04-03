@@ -18,7 +18,7 @@ dist/
 package-lock.json
 
 send-*test.ts
-mikroauth.config.json
+*mikroauth.config.json
 mikroauth/
 
 mikrodb*/

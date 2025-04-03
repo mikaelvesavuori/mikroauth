@@ -4,7 +4,6 @@ import { MikroServe } from 'mikroserve';
 
 import type {
   CombinedConfiguration,
-  CombinedOptions,
   EmailProvider,
   StorageProvider
 } from './interfaces/index.js';
@@ -38,15 +37,15 @@ export async function startServerWithMikroProviders() {
  * @description Starts up MikroServe for serving MikroAuth.
  */
 export async function startServer(
-  options: CombinedOptions,
+  config: CombinedConfiguration,
   emailProvider?: EmailProvider,
   storageProvider?: StorageProvider
 ) {
   const storage = storageProvider || new InMemoryStorageProvider();
   const email = emailProvider || new InMemoryEmailProvider();
 
-  const auth = new MikroAuth(options.auth, email, storage);
-  const server = new MikroServe(options.server);
+  const auth = new MikroAuth(config, email, storage);
+  const server = new MikroServe(config.server);
 
   server.post('/login', async (c: any) => {
     const body = c.req.body;

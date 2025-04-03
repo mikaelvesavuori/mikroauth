@@ -3,8 +3,9 @@ import { URL } from 'node:url';
 import { MikroConf } from 'mikroconf';
 
 import type {
-  AuthConfiguration,
   AuthOptions,
+  CombinedConfiguration,
+  EmailOptions,
   EmailProvider,
   JwtPayload,
   MagicLinkRequest,
@@ -39,26 +40,27 @@ const messages = {
  * authentication service that works with your storage and email.
  */
 export class MikroAuth {
-  private readonly config: AuthConfiguration;
+  private readonly config: CombinedConfiguration;
   private readonly email: EmailProvider;
   private readonly storage: StorageProvider;
   private readonly jwtService: JsonWebToken;
   private readonly templates: MagicLinkEmailTemplates;
 
   constructor(
-    options: AuthOptions,
+    options: { auth: AuthOptions; email: EmailOptions },
     emailProvider?: EmailProvider,
     storageProvider?: StorageProvider
   ) {
-    const config = new MikroConf(mikroauthOptions({ auth: options })).get()
-      .auth as AuthConfiguration;
-    if (config.debug) console.log('Using configuration:', config);
+    const config = new MikroConf(
+      mikroauthOptions({ auth: options.auth, email: options.email })
+    ).get() as CombinedConfiguration;
+    if (config.auth.debug) console.log('Using configuration:', config);
     this.config = config;
 
     this.email = emailProvider || new InMemoryEmailProvider();
     this.storage = storageProvider || new InMemoryStorageProvider();
-    this.jwtService = new JsonWebToken(config.jwtSecret);
-    this.templates = new MagicLinkEmailTemplates(config?.templates);
+    this.jwtService = new JsonWebToken(config.auth.jwtSecret);
+    this.templates = new MagicLinkEmailTemplates(config?.auth.templates);
 
     this.checkIfUsingDefaultCredentialsInProduction();
   }
@@ -69,7 +71,7 @@ export class MikroAuth {
   private checkIfUsingDefaultCredentialsInProduction() {
     if (
       process.env.NODE_ENV === 'production' &&
-      this.config.jwtSecret === configDefaults().auth.jwtSecret
+      this.config.auth.jwtSecret === configDefaults().auth.jwtSecret
     ) {
       console.error(
         'WARNING: Using default secrets in production environment!'
@@ -100,7 +102,7 @@ export class MikroAuth {
       email: user.email,
       username: user.username,
       role: user.role,
-      exp: Math.floor(Date.now() / 1e3) + 60 * 60 * 24
+      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24
     });
   }
 
@@ -123,7 +125,7 @@ export class MikroAuth {
     const size = await this.storage.getCollectionSize(sessionKey);
 
     // Remove oldest session if at max capacity
-    if (size >= this.config.maxActiveSessions) {
+    if (size >= this.config.auth.maxActiveSessions) {
       const oldestToken =
         await this.storage.removeOldestFromCollection(sessionKey);
       if (oldestToken) await this.storage.delete(`refresh:${oldestToken}`);
@@ -132,13 +134,13 @@ export class MikroAuth {
     await this.storage.addToCollection(
       sessionKey,
       refreshToken,
-      this.config.refreshTokenExpirySeconds
+      this.config.auth.refreshTokenExpirySeconds
     );
 
     await this.storage.set(
       `refresh:${refreshToken}`,
       JSON.stringify(metadata),
-      this.config.refreshTokenExpirySeconds
+      this.config.auth.refreshTokenExpirySeconds
     );
   }
 
@@ -149,8 +151,8 @@ export class MikroAuth {
     const { token, email } = params;
 
     try {
-      new URL(this.config.appUrl); // Validate base URL format
-      return `${this.config.appUrl}?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+      new URL(this.config.auth.appUrl); // Validate base URL format
+      return `${this.config.auth.appUrl}?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
     } catch (_error) {
       throw new Error('Invalid base URL configuration');
     }
@@ -179,7 +181,7 @@ export class MikroAuth {
       await this.storage.set(
         userKey,
         JSON.stringify(metadata),
-        this.config.magicLinkExpirySeconds
+        this.config.auth.magicLinkExpirySeconds
       );
 
       // Invalidate existing magic links for this email to prevent abuse
@@ -200,13 +202,14 @@ export class MikroAuth {
       }
 
       const magicLink = this.generateMagicLinkUrl({ token, email });
-      const expiryMinutes = Math.ceil(this.config.magicLinkExpirySeconds / 60);
+      const expiryMinutes = Math.ceil(
+        this.config.auth.magicLinkExpirySeconds / 60
+      );
 
       await this.email.sendMail({
-        from: process.env.EMAIL_FROM || configDefaults().email.user,
+        from: this.config.email.user,
         to: email,
-        subject:
-          process.env.EMAIL_SUBJECT || configDefaults().email.emailSubject,
+        subject: this.config.email.emailSubject,
         text: this.templates.getText(magicLink, expiryMinutes),
         html: this.templates.getHtml(magicLink, expiryMinutes)
       });
@@ -254,7 +257,7 @@ export class MikroAuth {
       };
 
       const accessToken = this.jwtService.sign(payload, {
-        exp: this.config.jwtExpirySeconds
+        exp: this.config.auth.jwtExpirySeconds
       });
 
       await this.trackSession(email, refreshToken, {
@@ -266,7 +269,7 @@ export class MikroAuth {
       const result = {
         accessToken,
         refreshToken,
-        exp: this.config.jwtExpirySeconds,
+        exp: this.config.auth.jwtExpirySeconds,
         tokenType: 'Bearer'
       };
 
@@ -309,20 +312,20 @@ export class MikroAuth {
       };
 
       const accessToken = this.jwtService.sign(payload, {
-        exp: this.config.jwtExpirySeconds
+        exp: this.config.auth.jwtExpirySeconds
       });
 
       metadata.lastUsed = Date.now();
       await this.storage.set(
         `refresh:${refreshToken}`,
         JSON.stringify(metadata),
-        this.config.refreshTokenExpirySeconds
+        this.config.auth.refreshTokenExpirySeconds
       );
 
       return {
         accessToken,
         refreshToken,
-        exp: this.config.jwtExpirySeconds,
+        exp: this.config.auth.jwtExpirySeconds,
         tokenType: 'Bearer'
       };
     } catch (error) {
@@ -462,7 +465,7 @@ export class MikroAuth {
           await this.storage.addToCollection(
             sessionKey,
             currentRefreshToken,
-            this.config.refreshTokenExpirySeconds
+            this.config.auth.refreshTokenExpirySeconds
           );
         }
       }

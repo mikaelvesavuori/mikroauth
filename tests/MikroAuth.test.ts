@@ -28,15 +28,17 @@ beforeEach(() => {
 
   auth = new MikroAuth(
     {
-      jwtSecret: TEST_JWT_SECRET,
-      appUrl: TEST_APP_URL,
-      magicLinkExpirySeconds: TEST_MAGIC_LINK_EXPIRY,
-      jwtExpirySeconds: TEST_JWT_EXPIRY,
-      refreshTokenExpirySeconds: TEST_REFRESH_EXPIRY,
-      maxActiveSessions: 3,
-      templates: null,
-      debug: false
-    },
+      auth: {
+        jwtSecret: TEST_JWT_SECRET,
+        appUrl: TEST_APP_URL,
+        magicLinkExpirySeconds: TEST_MAGIC_LINK_EXPIRY,
+        jwtExpirySeconds: TEST_JWT_EXPIRY,
+        refreshTokenExpirySeconds: TEST_REFRESH_EXPIRY,
+        maxActiveSessions: 3,
+        templates: null,
+        debug: false
+      }
+    } as any,
     emailProvider,
     storageProvider
   );
@@ -630,7 +632,7 @@ describe('JWT authentication', () => {
 
 describe('Error handling', () => {
   test('It should handle invalid base URL', async () => {
-    const config = { appUrl: 'invalid-url' };
+    const config = { auth: { appUrl: 'invalid-url' } };
     const authWithInvalidUrl = new MikroAuth(
       // @ts-ignore
       config,
