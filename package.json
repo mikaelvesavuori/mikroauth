@@ -1,0 +1,72 @@
+{
+  "name": "mikroauth",
+  "description": "Dead-simple magic link authentication that is useful, lightweight, and uncluttered.",
+  "version": "0.0.13",
+  "author": "Mikael Vesavuori",
+  "license": "MIT",
+  "keywords": [
+    "auth",
+    "authentication",
+    "magic-link",
+    "email-link",
+    "email-sign-in"
+  ],
+  "main": "lib/index.js",
+  "module": "lib/index.mjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikaelvesavuori/mikroauth"
+  },
+  "bugs": {
+    "url": "https://github.com/mikaelvesavuori/mikroauth/issues"
+  },
+  "homepage": "https://github.com/mikaelvesavuori/mikroauth",
+  "exports": {
+    ".": {
+      "require": "./lib/index.js",
+      "import": "./lib/index.mjs"
+    }
+  },
+  "files": [
+    "/lib",
+    "!/lib/**/*.map",
+    "!/tests"
+  ],
+  "bin": {
+    "mikroauth": "./lib/cli.js"
+  },
+  "scripts": {
+    "start": "npx tsx src/cli.ts --forceAuth",
+    "test": "npm run test:licenses && npm run test:types && npm run lint && npm run test:unit",
+    "test:types": "npx type-coverage --at-least 85 --strict --ignore-files \"tests/**/*.ts\" --ignore-files \"*.ts\" --ignore-files \"src/application/errors/*.ts\" --ignore-files \"testdata/*.ts\"",
+    "test:licenses": "npx license-compliance --direct --allow 'MIT;MIT-0;ISC;0BSD;BSD-2-Clause;BSD-3-Clause;Apache-2.0;Unlicense;CC0-1.0'",
+    "test:unit": "npx vitest run --coverage",
+    "test:watch": "npx vitest --watch",
+    "build": "npm run clean && npm run build:tsup",
+    "build:tsup": "npm run clean && tsup --config tsup.config.js",
+    "clean": "rm -rf lib && rm -rf dist",
+    "lint": "npx @biomejs/biome check --write ./src ./tests",
+    "package": "npm pack",
+    "prepublishOnly": "npm run build",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1",
+    "@types/node": "latest",
+    "@vitest/coverage-v8": "2",
+    "husky": "9",
+    "license-compliance": "latest",
+    "nodemailer": "6",
+    "tsup": "8",
+    "tsx": "latest",
+    "type-coverage": "2",
+    "typescript": "5",
+    "vitest": "2"
+  },
+  "dependencies": {
+    "mikroconf": "latest",
+    "mikrodb": "latest",
+    "mikromail": "latest",
+    "mikroserve": "latest"
+  }
+}

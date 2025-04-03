@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "lib",
+    "target": "es2022",
+    "lib": ["esnext"],
+    "declaration": true,
+    "esModuleInterop": true,
+    "importHelpers": false,
+    "forceConsistentCasingInFileNames": true,
+    "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "removeComments": false,
+    "resolveJsonModule": true,
+    "sourceMap": false,
+    "strict": true,
+    "strictFunctionTypes": true,
+    "skipLibCheck": true
+  },
+  "include": ["./src/**/*.ts", "./tests/**/*.ts", "Server.test.ts"],
+  "exclude": ["./node_modules/", "./lib/", "./dist/"]
+}
