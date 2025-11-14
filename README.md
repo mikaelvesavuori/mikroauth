@@ -101,6 +101,33 @@ import { MikroDB } from 'mikrodb';
 })();
 ```
 
+### Example: Return credentials/tokens at once (no email)
+
+```ts
+import { MikroAuth } from 'mikroauth';
+
+const mikroAuth = new MikroAuth({
+  auth: { jwtSecret: 'your-secret' },
+  email: { user: 'noreply@example.com' }
+});
+
+// Programmatic token creation (e.g., for SSO)
+const tokens = await mikroAuth.createToken({
+  email: 'user@example.com',
+  username: 'john_doe',
+  role: 'admin',
+  ip: '192.168.1.1' // optional
+});
+
+// Returns:
+// {
+//   accessToken: 'eyJhbGc...',
+//   refreshToken: 'abc123...',
+//   exp: 3600,
+//   tokenType: 'Bearer'
+// }
+```
+
 ## How Magic Links Work
 
 Magic links are a simple, yet powerful, [passwordless authentication](https://en.wikipedia.org/wiki/Passwordless_authentication) flow that works by sending a secure login link directly to the user's email. It's as simple as:

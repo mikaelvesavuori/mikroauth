@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx @modelcontextprotocol/inspector:*)",
+      "Bash(git remote:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run test:unit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

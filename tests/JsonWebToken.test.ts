@@ -87,9 +87,12 @@ describe('Sign JWT token', () => {
 
     const nowInSeconds = Math.floor(Date.now() / 1000);
 
-    expect(decoded.payload.exp).toBeCloseTo(nowInSeconds + options.exp!, 1);
+    expect(decoded.payload.exp).toBeCloseTo(
+      nowInSeconds + (options.exp ?? 0),
+      1
+    );
     expect(decoded.payload.nbf).toBeCloseTo(
-      nowInSeconds + options.notBefore!,
+      nowInSeconds + (options.notBefore ?? 0),
       1
     );
     expect(decoded.payload.iss).toBe(options.issuer);

@@ -101,7 +101,8 @@ export class InMemoryStorageProvider implements StorageProvider {
       });
     }
 
-    const collection = this.collections.get(collectionKey)!;
+    const collection = this.collections.get(collectionKey);
+    if (!collection) return;
 
     if (expirySeconds) collection.expiry = Date.now() + expirySeconds * 1000;
 

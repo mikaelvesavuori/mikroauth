@@ -4,7 +4,9 @@ import { InMemoryStorageProvider } from '../../src/providers/InMemoryStorageProv
 
 let storage: InMemoryStorageProvider;
 
-beforeEach(() => (storage = new InMemoryStorageProvider()));
+beforeEach(() => {
+  storage = new InMemoryStorageProvider();
+});
 
 afterEach(() => {
   storage.destroy();

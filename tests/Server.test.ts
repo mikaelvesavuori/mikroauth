@@ -5,27 +5,31 @@ const mockEndpoints = new Map();
 
 // Mock MikroServe
 vi.mock('mikroserve', () => ({
-  MikroServe: vi.fn().mockImplementation(() => ({
-    get: vi.fn((path, handler) => mockEndpoints.set(`GET ${path}`, handler)),
-    post: vi.fn((path, handler) => mockEndpoints.set(`POST ${path}`, handler)),
-    delete: vi.fn((path, handler) =>
+  MikroServe: class {
+    get = vi.fn((path: string, handler: any) =>
+      mockEndpoints.set(`GET ${path}`, handler)
+    );
+    post = vi.fn((path: string, handler: any) =>
+      mockEndpoints.set(`POST ${path}`, handler)
+    );
+    delete = vi.fn((path: string, handler: any) =>
       mockEndpoints.set(`DELETE ${path}`, handler)
-    ),
-    start: vi.fn(),
-    stop: vi.fn(),
-    port: 3000,
-    isReady: true,
-    on: vi.fn()
-  }))
+    );
+    start = vi.fn();
+    stop = vi.fn();
+    port = 3000;
+    isReady = true;
+    on = vi.fn();
+  }
 }));
 
 // Mock MikroAuth
 vi.mock('../src/MikroAuth', () => ({
-  MikroAuth: vi.fn().mockImplementation(() => ({
-    createMagicLink: vi.fn().mockResolvedValue({
+  MikroAuth: class {
+    createMagicLink = vi.fn().mockResolvedValue({
       message: 'If a matching account was found, a magic link has been sent'
-    }),
-    verifyToken: vi.fn().mockImplementation(({ email, token }) => {
+    });
+    verifyToken = vi.fn().mockImplementation(({ email, token }: any) => {
       if (email === 'test@example.com' && token !== 'invalid-token') {
         return Promise.resolve({
           accessToken: 'mock-access-token',
@@ -33,52 +37,52 @@ vi.mock('../src/MikroAuth', () => ({
         });
       }
       return Promise.resolve(null);
-    }),
-    refreshAccessToken: vi.fn().mockImplementation((token) => {
+    });
+    refreshAccessToken = vi.fn().mockImplementation((token: string) => {
       if (token === 'mock-refresh-token') {
         return Promise.resolve({
           accessToken: 'new-mock-access-token'
         });
       }
       return Promise.resolve(null);
-    }),
-    logout: vi.fn().mockResolvedValue({ success: true }),
-    verify: vi.fn().mockReturnValue({ sub: 'test@example.com' }),
-    getSessions: vi.fn().mockResolvedValue({
+    });
+    logout = vi.fn().mockResolvedValue({ success: true });
+    verify = vi.fn().mockReturnValue({ sub: 'test@example.com' });
+    getSessions = vi.fn().mockResolvedValue({
       sessions: [{ id: 'session-1' }, { id: 'session-2' }]
-    }),
-    revokeSessions: vi.fn().mockResolvedValue({
+    });
+    revokeSessions = vi.fn().mockResolvedValue({
       message: 'All other sessions revoked successfully.'
-    })
-  }))
+    });
+  }
 }));
 
 // Mock providers
 vi.mock('../src/providers/InMemoryEmailProvider', () => ({
-  InMemoryEmailProvider: vi.fn().mockImplementation(() => ({
-    getSentEmails: vi
+  InMemoryEmailProvider: class {
+    getSentEmails = vi
       .fn()
       .mockReturnValue([
         { to: 'test@example.com', subject: 'Your Magic Link', body: 'token123' }
-      ]),
-    sendEmail: vi.fn().mockResolvedValue(true)
-  }))
+      ]);
+    sendEmail = vi.fn().mockResolvedValue(true);
+  }
 }));
 
 vi.mock('../src/providers/InMemoryStorageProvider', () => ({
-  InMemoryStorageProvider: vi.fn().mockImplementation(() => ({
-    findKeys: vi.fn().mockImplementation((pattern) => {
+  InMemoryStorageProvider: class {
+    findKeys = vi.fn().mockImplementation((pattern) => {
       if (pattern === 'magic_link:*') {
         return Promise.resolve(['magic_link:token123', 'magic_link:token456']);
       }
       return Promise.resolve([]);
-    }),
-    delete: vi.fn().mockResolvedValue(true),
-    get: vi
+    });
+    delete = vi.fn().mockResolvedValue(true);
+    get = vi
       .fn()
-      .mockResolvedValue(JSON.stringify({ email: 'test@example.com' })),
-    set: vi.fn().mockResolvedValue(true)
-  }))
+      .mockResolvedValue(JSON.stringify({ email: 'test@example.com' }));
+    set = vi.fn().mockResolvedValue(true);
+  }
 }));
 
 // Import after mocks are established
@@ -133,7 +137,7 @@ describe('MikroAuth Server', () => {
       storage: {}
     };
 
-    // @ts-ignore
+    // @ts-expect-error
     server = startServer(config, email, storage);
   });
 

@@ -1,14 +1,19 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "vcs": { "enabled": false, "clientKind": "git", "useIgnoreFile": false },
-  "files": { "ignoreUnknown": false, "ignore": [] },
+  "$schema": "https://biomejs.dev/schemas/2.3.5/schema.json",
+  "vcs": {
+    "enabled": false,
+    "clientKind": "git",
+    "useIgnoreFile": false
+  },
+  "files": {
+    "ignoreUnknown": false
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
     "indentWidth": 2,
     "lineWidth": 80
   },
-  "organizeImports": { "enabled": true },
   "linter": {
     "enabled": true,
     "rules": {
@@ -19,8 +24,7 @@
         "useArrowFunction": "off"
       },
       "correctness": {
-        "noUnusedVariables": "error",
-        "useArrayLiterals": "off"
+        "noUnusedVariables": "error"
       },
       "style": {
         "noNamespace": "error",
@@ -34,8 +38,7 @@
         "noUnsafeDeclarationMerging": "error",
         "useNamespaceKeyword": "error"
       }
-    },
-    "ignore": ["node_modules/**"]
+    }
   },
   "javascript": {
     "formatter": {
@@ -49,24 +52,34 @@
       "trailingCommas": "none"
     }
   },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": {
+          "level": "off",
+          "options": {
+            "identifierOrder": "lexicographic"
+          }
+        }
+      }
+    }
+  },
   "overrides": [
     {
-      "include": ["*.ts", "*.tsx", "*.mts", "*.cts", "*.mjs"],
       "linter": {
         "rules": {
           "performance": {
             "noDelete": "off"
           },
           "complexity": {
-            "noForEach": "off",
-            "noBannedTypes": "off"
+            "noForEach": "off"
+          },
+          "suspicious": {
+            "noAssignInExpressions": "off",
+            "noPrototypeBuiltins": "off"
           },
           "style": {
             "noNonNullAssertion": "off"
-          },
-          "suspicious": {
-            "noPrototypeBuiltins": "off",
-            "noAssignInExpressions": "off"
           }
         }
       }

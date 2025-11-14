@@ -5,6 +5,7 @@ import { MikroConf } from 'mikroconf';
 import type {
   AuthOptions,
   CombinedConfiguration,
+  CreateTokenRequest,
   EmailOptions,
   EmailProvider,
   JwtPayload,
@@ -218,6 +219,62 @@ export class MikroAuth {
     } catch (error) {
       console.error(`Failed to process magic link request: ${error}`);
       throw new Error('Failed to process magic link request');
+    }
+  }
+
+  /**
+   * @description Creates credentials/tokens directly without sending an email.
+   * This method is useful for programmatic use cases such as SSO integrations,
+   * where you need to authenticate a user and obtain tokens directly without
+   * going through the magic link flow.
+   */
+  public async createToken(params: CreateTokenRequest): Promise<TokenResponse> {
+    const { email, username, role, ip } = params;
+
+    if (!isValidEmail(email)) throw new Error('Valid email required');
+
+    try {
+      const tokenId = crypto.randomBytes(16).toString('hex');
+      const refreshToken = this.generateRefreshToken();
+      const createdAt = Date.now();
+
+      const payload: JwtPayload = {
+        sub: email,
+        username: username,
+        role: role,
+        jti: tokenId,
+        lastLogin: createdAt,
+        metadata: {
+          ip: ip || 'unknown'
+        },
+        exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 // 24 hours
+      };
+
+      const accessToken = this.jwtService.sign(payload, {
+        exp: this.config.auth.jwtExpirySeconds
+      });
+
+      const metadata = {
+        email,
+        username,
+        role,
+        ipAddress: ip || 'unknown',
+        tokenId,
+        createdAt,
+        lastLogin: createdAt
+      };
+
+      await this.trackSession(email, refreshToken, metadata);
+
+      return {
+        accessToken,
+        refreshToken,
+        exp: this.config.auth.jwtExpirySeconds,
+        tokenType: 'Bearer'
+      };
+    } catch (error) {
+      console.error('Token creation error:', error);
+      throw new Error('Token creation failed');
     }
   }
 

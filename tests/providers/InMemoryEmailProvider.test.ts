@@ -9,7 +9,9 @@ import { InMemoryEmailProvider } from '../../src/providers/InMemoryEmailProvider
 
 let emailService: InMemoryEmailProvider;
 
-beforeEach(() => (emailService = new InMemoryEmailProvider()));
+beforeEach(() => {
+  emailService = new InMemoryEmailProvider();
+});
 
 test('It should implement EmailProvider interface', () => {
   const service: EmailProvider = emailService;

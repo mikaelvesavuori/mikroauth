@@ -114,6 +114,13 @@ export interface MagicLinkRequest {
   ip?: string;
 }
 
+export interface CreateTokenRequest {
+  email: string;
+  username?: string;
+  role?: string;
+  ip?: string;
+}
+
 export interface MagicLinkUrlParams {
   token: string;
   email: string;

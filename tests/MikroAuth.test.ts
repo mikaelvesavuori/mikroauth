@@ -55,7 +55,7 @@ describe('Initialization', () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
 
-    // @ts-ignore
+    // @ts-expect-error
     expect(() => new MikroAuth(storage, emailProvider, {})).toThrowError();
 
     process.env.NODE_ENV = originalEnv;
@@ -189,7 +189,7 @@ describe('Magic link generation', () => {
     const tokenData = await storageProvider.get(keys[0]);
     expect(tokenData).not.toBeNull();
 
-    const metadata = JSON.parse(tokenData!);
+    const metadata = JSON.parse(tokenData ?? '{}');
     expect(metadata.email).toBe(TEST_EMAIL);
     expect(metadata.ipAddress).toBe(request.ip);
   });
@@ -285,7 +285,7 @@ describe('Token verification', () => {
     );
     expect(refreshData).not.toBeNull();
 
-    const refreshMetadata = JSON.parse(refreshData!);
+    const refreshMetadata = JSON.parse(refreshData ?? '{}');
     expect(refreshMetadata.email).toBe(TEST_EMAIL);
   });
 
@@ -370,7 +370,7 @@ describe('Token refresh', () => {
     expect(decoded.sub).toBe(TEST_EMAIL);
 
     const refreshData = await storageProvider.get(`refresh:${refreshToken}`);
-    const refreshMetadata = JSON.parse(refreshData!);
+    const refreshMetadata = JSON.parse(refreshData ?? '{}');
     expect(refreshMetadata).toHaveProperty('lastUsed');
   });
 
@@ -600,7 +600,7 @@ describe('JWT authentication', () => {
     expect(next).toHaveBeenCalledWith();
 
     expect(request).toHaveProperty('user');
-    // @ts-ignore
+    // @ts-expect-error
     expect(request.user).toHaveProperty('email', TEST_EMAIL);
   });
 
@@ -634,7 +634,7 @@ describe('Error handling', () => {
   test('It should handle invalid base URL', async () => {
     const config = { auth: { appUrl: 'invalid-url' } };
     const authWithInvalidUrl = new MikroAuth(
-      // @ts-ignore
+      // @ts-expect-error
       config,
       emailProvider,
       storageProvider
@@ -664,6 +664,302 @@ describe('Error handling', () => {
   });
 });
 
+describe('Direct token creation', () => {
+  test('It should create tokens directly without sending email', async () => {
+    const request = {
+      email: TEST_EMAIL,
+      username: 'testuser',
+      role: 'user',
+      ip: '192.168.1.1'
+    };
+
+    const result = await auth.createToken(request);
+
+    expect(result).toHaveProperty('accessToken');
+    expect(result).toHaveProperty('refreshToken');
+    expect(result).toHaveProperty('exp', TEST_JWT_EXPIRY);
+    expect(result).toHaveProperty('tokenType', 'Bearer');
+
+    const jwtService = new JsonWebToken(TEST_JWT_SECRET);
+    const decoded = jwtService.verify(result.accessToken);
+
+    expect(decoded.sub).toBe(TEST_EMAIL);
+    expect(decoded.username).toBe('testuser');
+    expect(decoded.role).toBe('user');
+    expect(decoded).toHaveProperty('jti');
+    expect(decoded).toHaveProperty('lastLogin');
+    expect(decoded.metadata?.ip).toBe('192.168.1.1');
+
+    const sessions = await storageProvider.getCollection(
+      `sessions:${TEST_EMAIL}`
+    );
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toBe(result.refreshToken);
+
+    const refreshData = await storageProvider.get(
+      `refresh:${result.refreshToken}`
+    );
+    expect(refreshData).not.toBeNull();
+
+    const refreshMetadata = JSON.parse(refreshData ?? '{}');
+    expect(refreshMetadata.email).toBe(TEST_EMAIL);
+    expect(refreshMetadata.username).toBe('testuser');
+    expect(refreshMetadata.role).toBe('user');
+    expect(refreshMetadata.ipAddress).toBe('192.168.1.1');
+    expect(refreshMetadata).toHaveProperty('tokenId');
+    expect(refreshMetadata).toHaveProperty('createdAt');
+    expect(refreshMetadata).toHaveProperty('lastLogin');
+  });
+
+  test('It should create tokens with minimal parameters', async () => {
+    const request = {
+      email: TEST_EMAIL
+    };
+
+    const result = await auth.createToken(request);
+
+    expect(result).toHaveProperty('accessToken');
+    expect(result).toHaveProperty('refreshToken');
+    expect(result).toHaveProperty('exp', TEST_JWT_EXPIRY);
+    expect(result).toHaveProperty('tokenType', 'Bearer');
+
+    const jwtService = new JsonWebToken(TEST_JWT_SECRET);
+    const decoded = jwtService.verify(result.accessToken);
+
+    expect(decoded.sub).toBe(TEST_EMAIL);
+    expect(decoded.username).toBeUndefined();
+    expect(decoded.role).toBeUndefined();
+    expect(decoded.metadata?.ip).toBe('unknown');
+  });
+
+  test('It should reject token creation with invalid email', async () => {
+    const request = {
+      email: 'invalid-email',
+      username: 'testuser',
+      role: 'user'
+    };
+
+    await expect(auth.createToken(request)).rejects.toThrow(
+      'Valid email required'
+    );
+  });
+
+  test('It should create tokens without IP and default to unknown', async () => {
+    const request = {
+      email: TEST_EMAIL,
+      username: 'testuser',
+      role: 'admin'
+    };
+
+    const result = await auth.createToken(request);
+
+    const jwtService = new JsonWebToken(TEST_JWT_SECRET);
+    const decoded = jwtService.verify(result.accessToken);
+
+    expect(decoded.metadata?.ip).toBe('unknown');
+
+    const refreshData = await storageProvider.get(
+      `refresh:${result.refreshToken}`
+    );
+    const refreshMetadata = JSON.parse(refreshData ?? '{}');
+    expect(refreshMetadata.ipAddress).toBe('unknown');
+  });
+
+  test('It should create valid access token that can be verified', async () => {
+    const request = {
+      email: TEST_EMAIL,
+      username: 'testuser',
+      role: 'user',
+      ip: '10.0.0.1'
+    };
+
+    const { accessToken } = await auth.createToken(request);
+
+    const payload = auth.verify(accessToken);
+
+    expect(payload).toHaveProperty('sub', TEST_EMAIL);
+    expect(payload).toHaveProperty('username', 'testuser');
+    expect(payload).toHaveProperty('role', 'user');
+    expect(payload).toHaveProperty('jti');
+    expect(payload).toHaveProperty('lastLogin');
+    expect(payload.metadata?.ip).toBe('10.0.0.1');
+  });
+
+  test('It should create refresh token that can be used to refresh access token', async () => {
+    const request = {
+      email: TEST_EMAIL,
+      username: 'testuser',
+      role: 'user',
+      ip: '192.168.1.1'
+    };
+
+    const { refreshToken } = await auth.createToken(request);
+
+    const refreshResult = await auth.refreshAccessToken(refreshToken);
+
+    expect(refreshResult).toHaveProperty('accessToken');
+    expect(refreshResult).toHaveProperty('refreshToken', refreshToken);
+    expect(refreshResult).toHaveProperty('exp', TEST_JWT_EXPIRY);
+    expect(refreshResult).toHaveProperty('tokenType', 'Bearer');
+
+    const jwtService = new JsonWebToken(TEST_JWT_SECRET);
+    const decoded = jwtService.verify(refreshResult.accessToken);
+
+    expect(decoded.sub).toBe(TEST_EMAIL);
+    expect(decoded.username).toBe('testuser');
+    expect(decoded.role).toBe('user');
+  });
+
+  test('It should track session after token creation', async () => {
+    const request = {
+      email: TEST_EMAIL,
+      username: 'testuser',
+      role: 'user'
+    };
+
+    const { refreshToken } = await auth.createToken(request);
+
+    const sessions = await storageProvider.getCollection(
+      `sessions:${TEST_EMAIL}`
+    );
+
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toBe(refreshToken);
+  });
+
+  test('It should respect max sessions limit when creating tokens', async () => {
+    const request = {
+      email: TEST_EMAIL,
+      username: 'testuser',
+      role: 'user'
+    };
+
+    const result1 = await auth.createToken(request);
+    const result2 = await auth.createToken(request);
+    const result3 = await auth.createToken(request);
+    const result4 = await auth.createToken(request);
+
+    const sessions = await storageProvider.getCollection(
+      `sessions:${TEST_EMAIL}`
+    );
+
+    expect(sessions).toHaveLength(3);
+    expect(sessions).not.toContain(result1.refreshToken);
+    expect(sessions).toContain(result2.refreshToken);
+    expect(sessions).toContain(result3.refreshToken);
+    expect(sessions).toContain(result4.refreshToken);
+  });
+
+  test('It should allow logout with tokens created via createToken', async () => {
+    const request = {
+      email: TEST_EMAIL,
+      username: 'testuser',
+      role: 'user'
+    };
+
+    const { refreshToken } = await auth.createToken(request);
+
+    const result = await auth.logout(refreshToken);
+
+    expect(result).toHaveProperty('message', 'Logged out successfully.');
+
+    const sessions = await storageProvider.getCollection(
+      `sessions:${TEST_EMAIL}`
+    );
+    expect(sessions).not.toContain(refreshToken);
+
+    const refreshData = await storageProvider.get(`refresh:${refreshToken}`);
+    expect(refreshData).toBeNull();
+  });
+
+  test('It should create tokens that work with authenticate middleware', async () => {
+    const request = {
+      email: TEST_EMAIL,
+      username: 'testuser',
+      role: 'user'
+    };
+
+    const { accessToken } = await auth.createToken(request);
+
+    const httpRequest = {
+      headers: {
+        authorization: `Bearer ${accessToken}`
+      }
+    };
+
+    const next = vi.fn();
+
+    auth.authenticate(httpRequest, next);
+
+    expect(next).toHaveBeenCalledWith();
+    // @ts-expect-error
+    expect(httpRequest.user).toHaveProperty('email', TEST_EMAIL);
+  });
+
+  test('It should handle storage errors during token creation', async () => {
+    vi.spyOn(storageProvider, 'addToCollection').mockImplementationOnce(() => {
+      throw new Error('Storage error');
+    });
+
+    const request = {
+      email: TEST_EMAIL,
+      username: 'testuser',
+      role: 'user'
+    };
+
+    await expect(auth.createToken(request)).rejects.toThrow(
+      'Token creation failed'
+    );
+  });
+
+  test('It should create tokens with different roles', async () => {
+    const roles = ['user', 'admin', 'moderator', 'guest'];
+
+    for (const role of roles) {
+      const request = {
+        email: `${role}@example.com`,
+        username: role,
+        role: role
+      };
+
+      const { accessToken } = await auth.createToken(request);
+
+      const jwtService = new JsonWebToken(TEST_JWT_SECRET);
+      const decoded = jwtService.verify(accessToken);
+
+      expect(decoded.role).toBe(role);
+    }
+  });
+
+  test('It should not send any email when creating tokens', async () => {
+    const initialEmailCount = emailProvider.getSentEmails().length;
+
+    const request = {
+      email: TEST_EMAIL,
+      username: 'testuser',
+      role: 'user'
+    };
+
+    await auth.createToken(request);
+
+    const finalEmailCount = emailProvider.getSentEmails().length;
+    expect(finalEmailCount).toBe(initialEmailCount);
+  });
+
+  test('It should not create any magic link tokens when using createToken', async () => {
+    const request = {
+      email: TEST_EMAIL,
+      username: 'testuser',
+      role: 'user'
+    };
+
+    await auth.createToken(request);
+
+    const magicLinkKeys = await storageProvider.findKeys('magic_link:*');
+    expect(magicLinkKeys).toHaveLength(0);
+  });
+});
+
 describe('Edge cases', () => {
   test('It should handle requests with no IP', async () => {
     const request: MagicLinkRequest = {
@@ -674,7 +970,7 @@ describe('Edge cases', () => {
 
     const tokenKeys = await storageProvider.findKeys('magic_link:*');
     const tokenData = await storageProvider.get(tokenKeys[0]);
-    const metadata = JSON.parse(tokenData!);
+    const metadata = JSON.parse(tokenData ?? '{}');
 
     expect(metadata.ipAddress).toBe('unknown');
   });

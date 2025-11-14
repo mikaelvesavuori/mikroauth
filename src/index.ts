@@ -1,4 +1,8 @@
-export type { EmailProvider, StorageProvider } from './interfaces/index.js';
+export type {
+  CreateTokenRequest,
+  EmailProvider,
+  StorageProvider
+} from './interfaces/index.js';
 
 export { MikroAuth } from './MikroAuth.js';
 
