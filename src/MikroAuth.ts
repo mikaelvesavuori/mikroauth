@@ -149,11 +149,12 @@ export class MikroAuth {
    * @description Creates the actual magic link URL, using the token and email.
    */
   private generateMagicLinkUrl(params: MagicLinkUrlParams): string {
-    const { token, email } = params;
+    const { token, email, appUrl } = params;
+    const baseUrl = appUrl || this.config.auth.appUrl;
 
     try {
-      new URL(this.config.auth.appUrl); // Validate base URL format
-      return `${this.config.auth.appUrl}?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+      new URL(baseUrl); // Validate base URL format
+      return `${baseUrl}?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
     } catch (_error) {
       throw new Error('Invalid base URL configuration');
     }
@@ -165,7 +166,7 @@ export class MikroAuth {
   public async createMagicLink(
     params: MagicLinkRequest
   ): Promise<{ message: string }> {
-    const { email, ip, metadata } = params;
+    const { email, ip, metadata, appUrl } = params;
 
     if (!isValidEmail(email)) throw new Error('Valid email required');
 
@@ -202,7 +203,7 @@ export class MikroAuth {
         }
       }
 
-      const magicLink = this.generateMagicLinkUrl({ token, email });
+      const magicLink = this.generateMagicLinkUrl({ token, email, appUrl });
       const expiryMinutes = Math.ceil(
         this.config.auth.magicLinkExpirySeconds / 60
       );

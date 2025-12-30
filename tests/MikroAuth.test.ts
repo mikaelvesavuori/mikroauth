@@ -983,3 +983,118 @@ describe('Edge cases', () => {
     expect(result).toHaveProperty('message', 'Logged out successfully.');
   });
 });
+
+describe('AppUrl override', () => {
+  test('It should use default appUrl when no override is provided', async () => {
+    const request: MagicLinkRequest = {
+      email: TEST_EMAIL,
+      ip: '192.168.1.1'
+    };
+
+    await auth.createMagicLink(request);
+
+    const emails = emailProvider.getSentEmails();
+    expect(emails).toHaveLength(1);
+    expect(emails[0].text).toContain(TEST_APP_URL);
+    expect(emails[0].html).toContain(TEST_APP_URL);
+  });
+
+  test('It should use overridden appUrl when provided', async () => {
+    const customAppUrl = 'https://portal.example.com';
+    const request: MagicLinkRequest = {
+      email: TEST_EMAIL,
+      ip: '192.168.1.1',
+      appUrl: customAppUrl
+    };
+
+    await auth.createMagicLink(request);
+
+    const emails = emailProvider.getSentEmails();
+    expect(emails).toHaveLength(1);
+    expect(emails[0].text).toContain(customAppUrl);
+    expect(emails[0].html).toContain(customAppUrl);
+    expect(emails[0].text).not.toContain(TEST_APP_URL);
+    expect(emails[0].html).not.toContain(TEST_APP_URL);
+  });
+
+  test('It should support different appUrls for different applications', async () => {
+    const app1Url = 'https://app1.example.com';
+    const app2Url = 'https://app2.example.com';
+    const app3Url = 'https://app3.example.com';
+
+    await auth.createMagicLink({
+      email: 'user1@example.com',
+      appUrl: app1Url
+    });
+
+    await auth.createMagicLink({
+      email: 'user2@example.com',
+      appUrl: app2Url
+    });
+
+    await auth.createMagicLink({
+      email: 'user3@example.com',
+      appUrl: app3Url
+    });
+
+    const emails = emailProvider.getSentEmails();
+    expect(emails).toHaveLength(3);
+
+    expect(emails[0].text).toContain(app1Url);
+    expect(emails[0].to).toBe('user1@example.com');
+
+    expect(emails[1].text).toContain(app2Url);
+    expect(emails[1].to).toBe('user2@example.com');
+
+    expect(emails[2].text).toContain(app3Url);
+    expect(emails[2].to).toBe('user3@example.com');
+  });
+
+  test('It should validate overridden appUrl format', async () => {
+    const request: MagicLinkRequest = {
+      email: TEST_EMAIL,
+      appUrl: 'invalid-url-format'
+    };
+
+    await expect(auth.createMagicLink(request)).rejects.toThrow(
+      'Failed to process magic link request'
+    );
+  });
+
+  test('It should work with appUrl override and metadata together', async () => {
+    const customAppUrl = 'https://custom-portal.example.com';
+    const request: MagicLinkRequest = {
+      email: TEST_EMAIL,
+      ip: '192.168.1.1',
+      appUrl: customAppUrl,
+      metadata: {
+        applicationName: 'Custom App',
+        userName: 'John Doe'
+      }
+    };
+
+    await auth.createMagicLink(request);
+
+    const emails = emailProvider.getSentEmails();
+    expect(emails).toHaveLength(1);
+    expect(emails[0].text).toContain(customAppUrl);
+    expect(emails[0].html).toContain(customAppUrl);
+  });
+
+  test('It should preserve query parameters in magic link with overridden appUrl', async () => {
+    const customAppUrl = 'https://portal.example.com/auth/callback';
+    const request: MagicLinkRequest = {
+      email: TEST_EMAIL,
+      appUrl: customAppUrl
+    };
+
+    await auth.createMagicLink(request);
+
+    const emails = emailProvider.getSentEmails();
+    expect(emails).toHaveLength(1);
+    expect(emails[0].text).toContain(`${customAppUrl}?token=`);
+    expect(emails[0].text).toContain(
+      `&email=${encodeURIComponent(TEST_EMAIL)}`
+    );
+  });
+});

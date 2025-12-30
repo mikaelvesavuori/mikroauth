@@ -113,6 +113,7 @@ export interface MagicLinkRequest {
   email: string;
   ip?: string;
   metadata?: Record<string, any>;
+  appUrl?: string;
 }
 
 export interface CreateTokenRequest {
@@ -125,6 +126,7 @@ export interface CreateTokenRequest {
 export interface MagicLinkUrlParams {
   token: string;
   email: string;
+  appUrl?: string;
 }
 
 export interface VerifyTokenRequest {
@@ -182,11 +184,13 @@ export interface MagicLinkRequest {
   email: string;
   ip?: string;
   metadata?: Record<string, any>;
+  appUrl?: string;
 }
 
 export interface MagicLinkUrlParams {
   token: string;
   email: string;
+  appUrl?: string;
 }
 
 export interface VerifyTokenRequest {

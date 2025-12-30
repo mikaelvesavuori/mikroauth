@@ -316,6 +316,46 @@ You can use metadata for various use cases:
 - **Localization**: Customize content based on user language preferences
 - **Dynamic data**: Include arrays, objects, or any structured data you need
 
+#### Overriding App URL Per Magic Link
+
+You can override the `appUrl` on a per-magic link basis, which is useful when serving multiple applications from a single authentication portal. This allows you to dynamically specify which application the user should be redirected to after clicking the magic link.
+
+```typescript
+await auth.createMagicLink({
+  email: 'user@example.com',
+  appUrl: 'https://app1.example.com/auth/callback'
+});
+
+// Different user, different application
+await auth.createMagicLink({
+  email: 'admin@example.com',
+  appUrl: 'https://admin-portal.example.com/login'
+});
+```
+
+The `appUrl` override works alongside metadata, so you can customize both the destination URL and email content:
+
+```typescript
+await auth.createMagicLink({
+  email: 'user@example.com',
+  appUrl: 'https://custom-app.example.com',
+  metadata: {
+    userName: 'John Doe',
+    applicationName: 'Custom App'
+  }
+});
+```
+
+Common use cases for `appUrl` overrides:
+
+- **Multi-tenant applications**: Direct users to their specific tenant/organization subdomain
+- **Authentication portal**: Single MikroAuth instance serving multiple applications
+- **Environment-specific redirects**: Send users to staging vs. production based on context
+- **Role-based routing**: Direct admins to admin portal, users to user portal
+- **Deep linking**: Send users to specific pages within your application
+
+The overridden `appUrl` must be a valid URL format, otherwise the magic link creation will fail. If no override is provided, the default `appUrl` from configuration is used.
+
 ### Email Configuration
 
 Defaults shown and explained.
