@@ -1097,4 +1097,81 @@ describe('AppUrl override', () => {
       `&email=${encodeURIComponent(TEST_EMAIL)}`
     );
   });
+
+  test('It should override email subject per magic link', async () => {
+    const customSubject = 'Welcome to ACME Corp Portal';
+    const request: MagicLinkRequest = {
+      email: TEST_EMAIL,
+      subject: customSubject
+    };
+
+    await auth.createMagicLink(request);
+
+    const emails = emailProvider.getSentEmails();
+    expect(emails).toHaveLength(1);
+    expect(emails[0].subject).toBe(customSubject);
+  });
+
+  test('It should use default subject when no override is provided', async () => {
+    const request: MagicLinkRequest = {
+      email: TEST_EMAIL
+    };
+
+    await auth.createMagicLink(request);
+
+    const emails = emailProvider.getSentEmails();
+    expect(emails).toHaveLength(1);
+    expect(emails[0].subject).toBe('Your Secure Login Link');
+  });
+
+  test('It should work with subject override, appUrl, and metadata together', async () => {
+    const customSubject = 'Sign in to Custom Portal';
+    const customAppUrl = 'https://custom-portal.example.com';
+    const request: MagicLinkRequest = {
+      email: TEST_EMAIL,
+      subject: customSubject,
+      appUrl: customAppUrl,
+      metadata: {
+        applicationName: 'Custom Portal',
+        userName: 'Jane Doe'
+      }
+    };
+
+    await auth.createMagicLink(request);
+
+    const emails = emailProvider.getSentEmails();
+    expect(emails).toHaveLength(1);
+    expect(emails[0].subject).toBe(customSubject);
+    expect(emails[0].text).toContain(customAppUrl);
+    expect(emails[0].html).toContain(customAppUrl);
+  });
+
+  test('It should allow different subjects for different magic links', async () => {
+    await auth.createMagicLink({
+      email: 'user1@example.com',
+      subject: 'Welcome to App 1'
+    });
+
+    await auth.createMagicLink({
+      email: 'user2@example.com',
+      subject: 'Welcome to App 2'
+    });
+
+    await auth.createMagicLink({
+      email: 'user3@example.com',
+      subject: 'Welcome to App 3'
+    });
+
+    const emails = emailProvider.getSentEmails();
+    expect(emails).toHaveLength(3);
+
+    expect(emails[0].subject).toBe('Welcome to App 1');
+    expect(emails[0].to).toBe('user1@example.com');
+
+    expect(emails[1].subject).toBe('Welcome to App 2');
+    expect(emails[1].to).toBe('user2@example.com');
+
+    expect(emails[2].subject).toBe('Welcome to App 3');
+    expect(emails[2].to).toBe('user3@example.com');
+  });
 });

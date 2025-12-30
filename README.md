@@ -49,7 +49,11 @@ import { MikroAuth } from 'mikroauth';
   });
 
   await auth.createMagicLink({
-    email: 'sam.person@acmecorp.xyz'
+    email: 'sam.person@acmecorp.xyz',
+    // Optional: override subject, appUrl, or add metadata
+    // subject: 'Welcome to ACME Corp',
+    // appUrl: 'https://custom.acmecorp.xyz/login',
+    // metadata: { userName: 'Sam' }
   });
 
   // Close manually since there is a persistent event loop started by MikroAuth
@@ -355,6 +359,48 @@ Common use cases for `appUrl` overrides:
 - **Deep linking**: Send users to specific pages within your application
 
 The overridden `appUrl` must be a valid URL format, otherwise the magic link creation will fail. If no override is provided, the default `appUrl` from configuration is used.
+
+#### Overriding Email Subject Per Magic Link
+
+You can override the email subject on a per-magic link basis, which is useful when you want to customize the email subject for different contexts, applications, or user types.
+
+```typescript
+await auth.createMagicLink({
+  email: 'user@example.com',
+  subject: 'Welcome to ACME Corp Portal'
+});
+
+// Different user, different subject
+await auth.createMagicLink({
+  email: 'admin@example.com',
+  subject: 'Admin Portal Login Link'
+});
+```
+
+The `subject` override works alongside `appUrl` and `metadata`, so you can customize the email subject, destination URL, and content all at once:
+
+```typescript
+await auth.createMagicLink({
+  email: 'user@example.com',
+  subject: 'Sign in to Premium Dashboard',
+  appUrl: 'https://premium.example.com',
+  metadata: {
+    userName: 'John Doe',
+    tier: 'Premium'
+  }
+});
+```
+
+Common use cases for `subject` overrides:
+
+- **Multi-tenant applications**: Customize subject lines with organization or tenant names
+- **Context-specific messaging**: Different subjects for onboarding vs. returning users
+- **Application-specific branding**: Match subject lines to different products or portals
+- **Localization**: Provide subjects in different languages based on user preferences
+- **Priority or urgency indicators**: Add context like "Urgent", "Action Required", etc.
+- **Event-driven authentication**: Customize subjects for password resets, security alerts, etc.
+
+If no override is provided, the default `emailSubject` from configuration is used.
 
 ### Email Configuration
 

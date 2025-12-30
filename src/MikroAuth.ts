@@ -166,7 +166,7 @@ export class MikroAuth {
   public async createMagicLink(
     params: MagicLinkRequest
   ): Promise<{ message: string }> {
-    const { email, ip, metadata, appUrl } = params;
+    const { email, ip, metadata, appUrl, subject } = params;
 
     if (!isValidEmail(email)) throw new Error('Valid email required');
 
@@ -211,7 +211,7 @@ export class MikroAuth {
       await this.email.sendMail({
         from: this.config.email.user,
         to: email,
-        subject: this.config.email.emailSubject,
+        subject: subject || this.config.email.emailSubject,
         text: this.templates.getText(magicLink, expiryMinutes, metadata),
         html: this.templates.getHtml(magicLink, expiryMinutes, metadata)
       });

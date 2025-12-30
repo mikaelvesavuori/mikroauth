@@ -114,6 +114,7 @@ export interface MagicLinkRequest {
   ip?: string;
   metadata?: Record<string, any>;
   appUrl?: string;
+  subject?: string;
 }
 
 export interface CreateTokenRequest {
@@ -185,6 +186,7 @@ export interface MagicLinkRequest {
   ip?: string;
   metadata?: Record<string, any>;
   appUrl?: string;
+  subject?: string;
 }
 
 export interface MagicLinkUrlParams {
