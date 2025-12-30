@@ -112,6 +112,7 @@ export interface RequestContext {
 export interface MagicLinkRequest {
   email: string;
   ip?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface CreateTokenRequest {
@@ -180,6 +181,7 @@ export interface RequestContext {
 export interface MagicLinkRequest {
   email: string;
   ip?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface MagicLinkUrlParams {
@@ -367,9 +369,11 @@ export type EmailTemplateConfiguration = {
  * @description Function that generates the text and HTML version of the email.
  * @param magicLink - The authentication link to include in the email.
  * @param expiryMinutes - The number of minutes until the link expires.
+ * @param metadata - Optional metadata object that can be used to customize the email content.
  * @returns The formatted text or HTML content for the email.
  */
 export type MagicLinkTemplate = (
   magicLink: string,
-  expiryMinutes: number
+  expiryMinutes: number,
+  metadata?: Record<string, any>
 ) => string;

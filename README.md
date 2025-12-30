@@ -262,6 +262,60 @@ Templates are passed in as an object with a function each to create the text and
 }
 ```
 
+#### Using Metadata in Templates
+
+Templates can optionally accept a metadata parameter that allows you to dynamically customize email content. This is useful for personalization, conditional content, and context-specific messaging.
+
+```typescript
+{
+  // ...
+  templates: {
+    textVersion: (magicLink: string, expiryMinutes: number, metadata?: Record<string, any>) => {
+      const userName = metadata?.userName || 'User';
+      const greeting = metadata?.isNewUser
+        ? `Welcome to our platform, ${userName}!`
+        : `Welcome back, ${userName}!`;
+
+      return `${greeting}\n\nClick here to login: ${magicLink}\nThis link expires in ${expiryMinutes} minutes.`;
+    },
+    htmlVersion: (magicLink: string, expiryMinutes: number, metadata?: Record<string, any>) => {
+      const userName = metadata?.userName || 'User';
+      const greeting = metadata?.isNewUser
+        ? `Welcome to our platform, ${userName}!`
+        : `Welcome back, ${userName}!`;
+
+      return `
+        <h1>${greeting}</h1>
+        <p><a href="${magicLink}">Click here to login</a></p>
+        <p>This link expires in ${expiryMinutes} minutes.</p>
+      `;
+    }
+  }
+}
+```
+
+To pass metadata when creating a magic link:
+
+```typescript
+await auth.createMagicLink({
+  email: 'sam.person@acmecorp.xyz',
+  metadata: {
+    userName: 'Sam Person',
+    isNewUser: false,
+    companyName: 'ACME Corp',
+    lastLogin: '2025-01-15'
+  }
+});
+```
+
+You can use metadata for various use cases:
+
+- **Personalization**: Include user names, company names, or other personal details
+- **Conditional content**: Show different messages for new vs. returning users
+- **Contextual information**: Display recent activity, account status, or special offers
+- **Localization**: Customize content based on user language preferences
+- **Dynamic data**: Include arrays, objects, or any structured data you need
+
 ### Email Configuration
 
 Defaults shown and explained.

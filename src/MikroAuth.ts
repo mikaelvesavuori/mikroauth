@@ -165,7 +165,7 @@ export class MikroAuth {
   public async createMagicLink(
     params: MagicLinkRequest
   ): Promise<{ message: string }> {
-    const { email, ip } = params;
+    const { email, ip, metadata } = params;
 
     if (!isValidEmail(email)) throw new Error('Valid email required');
 
@@ -173,7 +173,7 @@ export class MikroAuth {
       const token = this.generateToken(email);
       const userKey = `magic_link:${token}`;
 
-      const metadata = {
+      const storageMetadata = {
         email,
         ipAddress: ip || 'unknown',
         createdAt: Date.now()
@@ -181,7 +181,7 @@ export class MikroAuth {
 
       await this.storage.set(
         userKey,
-        JSON.stringify(metadata),
+        JSON.stringify(storageMetadata),
         this.config.auth.magicLinkExpirySeconds
       );
 
@@ -211,8 +211,8 @@ export class MikroAuth {
         from: this.config.email.user,
         to: email,
         subject: this.config.email.emailSubject,
-        text: this.templates.getText(magicLink, expiryMinutes),
-        html: this.templates.getHtml(magicLink, expiryMinutes)
+        text: this.templates.getText(magicLink, expiryMinutes, metadata),
+        html: this.templates.getHtml(magicLink, expiryMinutes, metadata)
       });
 
       return { message: messages.linkSent };

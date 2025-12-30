@@ -15,20 +15,36 @@ export class MagicLinkEmailTemplates {
   /**
    * @description Create the text content for a magic link email.
    */
-  getText(magicLink: string, expiryMinutes: number): string {
-    return this.templates.textVersion(magicLink, expiryMinutes).trim();
+  getText(
+    magicLink: string,
+    expiryMinutes: number,
+    metadata?: Record<string, any>
+  ): string {
+    return this.templates
+      .textVersion(magicLink, expiryMinutes, metadata)
+      .trim();
   }
 
   /**
    * @description Create the HTML content for a magic link email.
    */
-  getHtml(magicLink: string, expiryMinutes: number): string {
-    return this.templates.htmlVersion(magicLink, expiryMinutes).trim();
+  getHtml(
+    magicLink: string,
+    expiryMinutes: number,
+    metadata?: Record<string, any>
+  ): string {
+    return this.templates
+      .htmlVersion(magicLink, expiryMinutes, metadata)
+      .trim();
   }
 }
 
 const templateDefaults = {
-  textVersion: (magicLink: string, expiryMinutes: number) => `
+  textVersion: (
+    magicLink: string,
+    expiryMinutes: number,
+    _metadata?: Record<string, any>
+  ) => `
 Click this link to login: ${magicLink}
 
 Security Information:
@@ -38,7 +54,11 @@ Security Information:
 
 If you didn't request this link, please ignore this email.
 `,
-  htmlVersion: (magicLink: string, expiryMinutes: number) => `
+  htmlVersion: (
+    magicLink: string,
+    expiryMinutes: number,
+    _metadata?: Record<string, any>
+  ) => `
 <!DOCTYPE html>
 <html>
 <head>
