@@ -1,7 +1,7 @@
 {
   "name": "mikroauth",
   "description": "Dead-simple magic link authentication that is useful, lightweight, and uncluttered.",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "author": "Mikael Vesavuori",
   "license": "MIT",
   "keywords": [
@@ -56,7 +56,6 @@
     "@vitest/coverage-v8": "4",
     "husky": "9",
     "license-compliance": "latest",
-    "nodemailer": "6",
     "tsup": "8",
     "tsx": "latest",
     "type-coverage": "2",

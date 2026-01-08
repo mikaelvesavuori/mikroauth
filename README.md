@@ -655,6 +655,124 @@ By default, it uses in-memory providers suitable for development:
 
 You can implement your own providers by following the interfaces defined in the package.
 
+#### Email Providers
+
+MikroAuth includes built-in support for multiple email providers:
+
+##### SMTP-Based Provider
+
+**MikroMailProvider** - Uses SMTP for email delivery via [MikroMail](https://github.com/mikaelvesavuori/mikromail)
+
+```typescript
+import { MikroAuth, MikroMailProvider } from 'mikroauth';
+
+const email = new MikroMailProvider({
+  user: 'me@mydomain.com',
+  password: 'YOUR_PASSWORD_HERE',
+  host: 'smtp.email-provider.com',
+  port: 465,
+  secure: true
+});
+
+const auth = new MikroAuth(
+  { appUrl: 'https://acmecorp.xyz/app', jwtSecret: 'your-secret' },
+  email
+);
+```
+
+##### API-Based Providers
+
+All API-based providers use native `fetch` with zero dependencies:
+
+**ResendProvider** - Modern transactional email API
+
+```typescript
+import { MikroAuth, ResendProvider } from 'mikroauth';
+
+const email = new ResendProvider({
+  apiKey: 're_your_api_key_here',
+  debug: false // Optional
+});
+
+const auth = new MikroAuth(
+  { appUrl: 'https://acmecorp.xyz/app', jwtSecret: 'your-secret' },
+  email
+);
+```
+
+**BrevoProvider** - Formerly Sendinblue, popular transactional email service
+
+```typescript
+import { MikroAuth, BrevoProvider } from 'mikroauth';
+
+const email = new BrevoProvider({
+  apiKey: 'your_brevo_api_key_here',
+  debug: false // Optional
+});
+
+const auth = new MikroAuth(
+  { appUrl: 'https://acmecorp.xyz/app', jwtSecret: 'your-secret' },
+  email
+);
+```
+
+**PostmarkProvider** - Reliable transactional email delivery
+
+```typescript
+import { MikroAuth, PostmarkProvider } from 'mikroauth';
+
+const email = new PostmarkProvider({
+  serverToken: 'your_postmark_server_token_here',
+  messageStream: 'outbound', // Optional, defaults to 'outbound'
+  debug: false // Optional
+});
+
+const auth = new MikroAuth(
+  { appUrl: 'https://acmecorp.xyz/app', jwtSecret: 'your-secret' },
+  email
+);
+```
+
+**SendGridProvider** - Twilio SendGrid email API
+
+```typescript
+import { MikroAuth, SendGridProvider } from 'mikroauth';
+
+const email = new SendGridProvider({
+  apiKey: 'SG.your_sendgrid_api_key_here',
+  debug: false // Optional
+});
+
+const auth = new MikroAuth(
+  { appUrl: 'https://acmecorp.xyz/app', jwtSecret: 'your-secret' },
+  email
+);
+```
+
+**AWSESProvider** - Amazon Simple Email Service (SES) v2 API
+
+```typescript
+import { MikroAuth, AWSESProvider } from 'mikroauth';
+
+const email = new AWSESProvider({
+  accessKeyId: 'YOUR_AWS_ACCESS_KEY_ID',
+  secretAccessKey: 'YOUR_AWS_SECRET_ACCESS_KEY',
+  region: 'us-east-1', // Your AWS region
+  debug: false // Optional
+});
+
+const auth = new MikroAuth(
+  { appUrl: 'https://acmecorp.xyz/app', jwtSecret: 'your-secret' },
+  email
+);
+```
+
+**Notes:**
+
+- All API providers require verified sender addresses/domains per the provider's requirements
+- API providers have no additional dependencies and use native Node.js `fetch`
+- Error responses from the APIs are thrown as errors with `status` and `response` properties
+
 ### Server Configuration
 
 #### HTTPS/HTTP2 Configuration
