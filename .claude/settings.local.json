@@ -6,7 +6,11 @@
       "Bash(npm run build:*)",
       "Bash(npm test:*)",
       "Bash(npm run lint)",
-      "Bash(npm run test:unit:*)"
+      "Bash(npm run test:unit:*)",
+      "Bash(npm install:*)",
+      "Bash(npx license-compliance --direct)",
+      "Bash(npx license-compliance --format json)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []

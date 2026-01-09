@@ -1,7 +1,7 @@
 {
   "name": "mikroauth",
   "description": "Dead-simple magic link authentication that is useful, lightweight, and uncluttered.",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "author": "Mikael Vesavuori",
   "license": "MIT",
   "keywords": [
@@ -39,7 +39,7 @@
     "start": "npx tsx src/cli.ts --forceAuth",
     "test": "npm run test:licenses && npm run test:types && npm run lint && npm run test:unit",
     "test:types": "npx type-coverage --at-least 85 --strict --ignore-files \"tests/**/*.ts\" --ignore-files \"*.ts\" --ignore-files \"src/application/errors/*.ts\" --ignore-files \"testdata/*.ts\"",
-    "test:licenses": "npx license-compliance --direct --allow 'MIT;MIT-0;ISC;0BSD;BSD-2-Clause;BSD-3-Clause;Apache-2.0;Unlicense;CC0-1.0'",
+    "test:licenses": "npx license-compliance --direct --allow 'MIT;MIT-0;ISC;0BSD;BSD-2-Clause;BSD-3-Clause;Apache-2.0;Unlicense;CC0-1.0' --exclude \"/^mikro*\"",
     "test:unit": "npx vitest run --coverage",
     "test:watch": "npx vitest --watch",
     "build": "npm run clean && npm run build:tsup",
@@ -64,8 +64,8 @@
   },
   "dependencies": {
     "mikroconf": "latest",
-    "mikrodb": "latest",
     "mikromail": "latest",
-    "mikroserve": "latest"
+    "mikroserve": "latest",
+    "pikodb": "latest"
   }
 }

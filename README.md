@@ -16,11 +16,12 @@
 - Secure magic link (email) login solution using JWTs
 - Customizable text and HTML email templates
 - Can be used as a library or exposed directly as an API
-- Can be used with in-memory providers for storage and email or with providers for MikroDB and MikroMail
-- Just ~11kb gzipped, using only four (max) lightweight dependencies:
+- Can be used with in-memory providers for storage and email or with providers for PikoDB and MikroMail
+- Just ~8kb gzipped, using only four (max) lightweight dependencies:
   - [MikroConf](https://github.com/mikaelvesavuori/mikroconf) for handling config options;
-  - [MikroDB](https://github.com/mikaelvesavuori/mikrodb) and [MikroMail](https://github.com/mikaelvesavuori/mikromail) for sending emails and persisting data;
+  - [PikoDB](https://github.com/mikaelvesavuori/pikodb) and [MikroMail](https://github.com/mikaelvesavuori/mikromail) for sending emails and persisting data;
   - [MikroServe](https://github.com/mikaelvesavuori/mikroserve) when exposing MikroAuth as an API.
+- Application-layer encryption using AES-256-GCM (zero dependencies)
 - High test coverage
 
 ## Ecosystem
@@ -64,8 +65,8 @@ import { MikroAuth } from 'mikroauth';
 ### Example: Using Real Providers
 
 ```typescript
-import { MikroAuth, MikroDBProvider, MikroMailProvider } from 'mikroauth';
-import { MikroDB } from 'mikrodb';
+import { MikroAuth, PikoDBProvider, MikroMailProvider } from 'mikroauth';
+import { PikoDB } from 'pikodb';
 
 (async () => {
   // Using MikroMail to send emails
@@ -75,8 +76,11 @@ import { MikroDB } from 'mikrodb';
     host: 'smtp.email-provider.com'
   });
 
-  // Create a MikroDB provider by passing in an instance of MikroDB and starting it
-  const storage = new MikroDBProvider(new MikroDB());
+  // Create a PikoDB provider with optional encryption
+  const storage = new PikoDBProvider(
+    new PikoDB({ databaseDirectory: 'mikroauth' }),
+    process.env.STORAGE_KEY // Optional encryption key
+  );
   await storage.start();
 
   // Initializing MikroAuth with our providers
@@ -87,7 +91,7 @@ import { MikroDB } from 'mikrodb';
       // Additional options you can set
       magicLinkExpirySeconds: 15 * 60,
       jwtExpirySeconds: 60 * 60,
-      refreshTokenExpirySeconds: 7 * 24 * 60 * 60,ys
+      refreshTokenExpirySeconds: 7 * 24 * 60 * 60,
       maxActiveSessions: 3,
       templates: null,
       debug: false
@@ -805,7 +809,6 @@ openssl x509 -req -days 365 -in csr.pem -signkey private-key.pem -out certificat
 
 ## Future Ideas and Known Issues
 
-- The MikroDB provider does not yet have the ability to remove expired items.
 - WebAuthn support?
 - Emit events (emails?) for failed auth and such things?
 - Add artificial delay to simulate waiting when trying to login as non-existent user?

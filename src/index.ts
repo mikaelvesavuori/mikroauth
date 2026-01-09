@@ -6,7 +6,7 @@ export type {
 
 export { MikroAuth } from './MikroAuth.js';
 
-export { MikroDBProvider } from './providers/MikroDBProvider.js';
+export { PikoDBProvider } from './providers/PikoDBProvider.js';
 export { MikroMailProvider } from './providers/MikroMailProvider.js';
 export { InMemoryEmailProvider } from './providers/InMemoryEmailProvider.js';
 export { InMemoryStorageProvider } from './providers/InMemoryStorageProvider.js';

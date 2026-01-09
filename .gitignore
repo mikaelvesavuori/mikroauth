@@ -21,7 +21,7 @@ send-*test.ts
 *mikroauth.config.json
 mikroauth/
 
-mikrodb*/
+pikodb*/
 
 # Files generated from tests
 coverage/

@@ -1,5 +1,5 @@
 import { MikroConf } from 'mikroconf';
-import { MikroDB } from 'mikrodb';
+import { PikoDB } from 'pikodb';
 import { MikroServe } from 'mikroserve';
 
 import type {
@@ -12,13 +12,14 @@ import { MikroAuth } from './MikroAuth.js';
 
 import { InMemoryEmailProvider } from './providers/InMemoryEmailProvider.js';
 import { InMemoryStorageProvider } from './providers/InMemoryStorageProvider.js';
-import { MikroDBProvider } from './providers/MikroDBProvider.js';
+import { PikoDBProvider } from './providers/PikoDBProvider.js';
 import { MikroMailProvider } from './providers/MikroMailProvider.js';
 
 import { mikroauthOptions } from './config/mikroauthOptions.js';
 
 /**
  * @description Wires up MikroAuth with Mikro-family providers for other needed features.
+ * Uses PikoDB for lightweight, reliable storage with application-layer encryption.
  */
 export async function startServerWithMikroProviders() {
   const config = new MikroConf(
@@ -27,7 +28,12 @@ export async function startServerWithMikroProviders() {
 
   const email = new MikroMailProvider(config.email);
 
-  const storage = new MikroDBProvider(new MikroDB(config.storage));
+  const storage = new PikoDBProvider(
+    new PikoDB({
+      databaseDirectory: config.storage.databaseDirectory
+    }),
+    config.storage.encryptionKey
+  );
   await storage.start();
 
   await startServer(config, email, storage);

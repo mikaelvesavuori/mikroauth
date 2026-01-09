@@ -1,22 +1,28 @@
-import type { MikroDB } from 'mikrodb';
+import type { PikoDB } from 'pikodb';
 
 import type { StorageProvider } from '../interfaces/index.js';
+import { Encryption } from '../utils/encryption.js';
 
 /**
- * @description MikroDB implementation of the StorageProvider interface.
+ * @description PikoDB implementation of the StorageProvider interface.
+ * Provides lightweight, reliable key-value storage with optional encryption.
  */
-export class MikroDBProvider implements StorageProvider {
-  private readonly db: MikroDB;
+export class PikoDBProvider implements StorageProvider {
+  private readonly db: PikoDB;
+  private readonly encryption?: Encryption;
   private readonly PREFIX_KV = 'kv:';
   private readonly PREFIX_COLLECTION = 'coll:';
   private readonly TABLE_NAME = 'mikroauth';
 
-  constructor(mikroDb: MikroDB) {
-    this.db = mikroDb;
+  constructor(pikoDB: PikoDB, encryptionKey?: string) {
+    this.db = pikoDB;
+    if (encryptionKey) {
+      this.encryption = new Encryption(encryptionKey);
+    }
   }
 
   /**
-   * @description Start the MikroDB instance.
+   * @description Start the PikoDB instance.
    */
   public async start() {
     await this.db.start();
@@ -34,16 +40,14 @@ export class MikroDBProvider implements StorageProvider {
    */
   async set(key: string, value: string, expirySeconds?: number): Promise<void> {
     const dbKey = `${this.PREFIX_KV}${key}`;
+    const storedValue = this.encryption
+      ? this.encryption.encrypt(value)
+      : value;
     const expiration = expirySeconds
       ? Date.now() + expirySeconds * 1000
       : undefined;
 
-    await this.db.write({
-      tableName: this.TABLE_NAME,
-      key: dbKey,
-      value,
-      expiration
-    });
+    await this.db.write(this.TABLE_NAME, dbKey, storedValue, expiration);
   }
 
   /**
@@ -52,13 +56,11 @@ export class MikroDBProvider implements StorageProvider {
   async get(key: string): Promise<string | null> {
     const dbKey = `${this.PREFIX_KV}${key}`;
 
-    const result = await this.db.get({
-      tableName: this.TABLE_NAME,
-      key: dbKey
-    });
+    const result = await this.db.get(this.TABLE_NAME, dbKey);
 
     if (!result) return null;
-    return result;
+
+    return this.encryption ? this.encryption.decrypt(result) : result;
   }
 
   /**
@@ -66,11 +68,7 @@ export class MikroDBProvider implements StorageProvider {
    */
   async delete(key: string): Promise<void> {
     const dbKey = `${this.PREFIX_KV}${key}`;
-
-    await this.db.delete({
-      tableName: this.TABLE_NAME,
-      key: dbKey
-    });
+    await this.db.delete(this.TABLE_NAME, dbKey);
   }
 
   /**
@@ -83,25 +81,27 @@ export class MikroDBProvider implements StorageProvider {
   ): Promise<void> {
     const dbKey = `${this.PREFIX_COLLECTION}${collectionKey}`;
 
-    const existingCollection = await this.db.get({
-      tableName: this.TABLE_NAME,
-      key: dbKey
-    });
+    const existingCollection = await this.db.get(this.TABLE_NAME, dbKey);
 
     let collection: string[] = [];
-    if (existingCollection) collection = JSON.parse(existingCollection);
+    if (existingCollection) {
+      const decrypted = this.encryption
+        ? this.encryption.decrypt(existingCollection)
+        : existingCollection;
+      collection = JSON.parse(decrypted);
+    }
+
     if (!collection.includes(item)) collection.push(item);
 
+    const serialized = JSON.stringify(collection);
+    const storedValue = this.encryption
+      ? this.encryption.encrypt(serialized)
+      : serialized;
     const expiration = expirySeconds
       ? Date.now() + expirySeconds * 1000
       : undefined;
 
-    await this.db.write({
-      tableName: this.TABLE_NAME,
-      key: dbKey,
-      value: JSON.stringify(collection),
-      expiration
-    });
+    await this.db.write(this.TABLE_NAME, dbKey, storedValue, expiration);
   }
 
   /**
@@ -113,21 +113,22 @@ export class MikroDBProvider implements StorageProvider {
   ): Promise<void> {
     const dbKey = `${this.PREFIX_COLLECTION}${collectionKey}`;
 
-    const existingCollection = await this.db.get({
-      tableName: this.TABLE_NAME,
-      key: dbKey
-    });
+    const existingCollection = await this.db.get(this.TABLE_NAME, dbKey);
 
     if (!existingCollection) return;
 
-    let collection = JSON.parse(existingCollection);
+    const decrypted = this.encryption
+      ? this.encryption.decrypt(existingCollection)
+      : existingCollection;
+    let collection = JSON.parse(decrypted);
     collection = collection.filter((i: string) => i !== item);
 
-    await this.db.write({
-      tableName: this.TABLE_NAME,
-      key: dbKey,
-      value: JSON.stringify(collection)
-    });
+    const serialized = JSON.stringify(collection);
+    const storedValue = this.encryption
+      ? this.encryption.encrypt(serialized)
+      : serialized;
+
+    await this.db.write(this.TABLE_NAME, dbKey, storedValue);
   }
 
   /**
@@ -136,14 +137,14 @@ export class MikroDBProvider implements StorageProvider {
   async getCollection(collectionKey: string): Promise<string[]> {
     const dbKey = `${this.PREFIX_COLLECTION}${collectionKey}`;
 
-    const result = await this.db.get({
-      tableName: this.TABLE_NAME,
-      key: dbKey
-    });
+    const result = await this.db.get(this.TABLE_NAME, dbKey);
 
     if (!result) return [];
 
-    const collection = JSON.parse(result);
+    const decrypted = this.encryption
+      ? this.encryption.decrypt(result)
+      : result;
+    const collection = JSON.parse(decrypted);
 
     return collection;
   }
@@ -165,32 +166,34 @@ export class MikroDBProvider implements StorageProvider {
     const dbKey = `${this.PREFIX_COLLECTION}${collectionKey}`;
 
     // Get existing collection
-    const existingCollection = await this.db.get({
-      tableName: this.TABLE_NAME,
-      key: dbKey
-    });
+    const existingCollection = await this.db.get(this.TABLE_NAME, dbKey);
 
     if (!existingCollection) return null;
 
     // Parse collection
-    const collection = JSON.parse(existingCollection);
+    const decrypted = this.encryption
+      ? this.encryption.decrypt(existingCollection)
+      : existingCollection;
+    const collection = JSON.parse(decrypted);
     if (collection.length === 0) return null;
 
     // Remove the oldest item (first in the array)
     const oldest = collection.shift();
 
     // Write back the modified collection
-    await this.db.write({
-      tableName: this.TABLE_NAME,
-      key: dbKey,
-      value: JSON.stringify(collection)
-    });
+    const serialized = JSON.stringify(collection);
+    const storedValue = this.encryption
+      ? this.encryption.encrypt(serialized)
+      : serialized;
+
+    await this.db.write(this.TABLE_NAME, dbKey, storedValue);
 
     return oldest;
   }
 
   /**
    * @description Find keys matching a pattern.
+   * Supports wildcards: * (any characters) and ? (single character).
    */
   async findKeys(pattern: string): Promise<string[]> {
     // Convert wildcard pattern to regex pattern
@@ -201,10 +204,11 @@ export class MikroDBProvider implements StorageProvider {
 
     const regex = new RegExp(`^${regexPattern}$`);
 
-    // Get all KV keys
-    const results = await this.db.get({
-      tableName: this.TABLE_NAME
-    });
+    // Get all entries from the table
+    const results = await this.db.get(this.TABLE_NAME);
+
+    // PikoDB returns an array of [key, value] tuples when no key is specified
+    if (!Array.isArray(results)) return [];
 
     // Filter and transform keys
     return results
